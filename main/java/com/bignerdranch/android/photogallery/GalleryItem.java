@@ -5,36 +5,36 @@ package com.bignerdranch.android.photogallery;
  */
 
 public class GalleryItem {
+    private String title;
+    private String id;
+    private String url;
+
     public String getCaption() {
-        return mCaption;
+        return title;
     }
 
     public void setCaption(String caption) {
-        mCaption = caption;
+        title = caption;
     }
 
     public String getId() {
-        return mId;
+        return id;
     }
 
     public void setId(String id) {
-        mId = id;
+        id = id;
     }
 
     public String getUrl() {
-        return mUrl;
+        return url;
     }
 
     public void setUrl(String url) {
-        mUrl = url;
+        this.url = url;
     }
-
-    private String mCaption;
-    private String mId;
-    private String mUrl;
 
     @Override
     public String toString(){
-        return mCaption;
+        return title;
     }
 }

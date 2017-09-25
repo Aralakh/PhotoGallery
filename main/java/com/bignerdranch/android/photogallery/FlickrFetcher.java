@@ -109,11 +109,8 @@ public class FlickrFetcher {
 //            JSONObject jsonBody = new JSONObject(jsonString);
 //            parseItems(items, jsonBody);
             Gson gson = new Gson();
-            PhotoQueryResult result = gson.fromJson(jsonString, PhotoQueryResult.class);
-            setItemsPerPage(result.getPerPageCount());
-            setMaxPages(result.getPageCount());
-            setTotalItems(result.getTotalCount());
-            items = result.getResult();
+            PhotoResultQuery result = gson.fromJson(jsonString, PhotoResultQuery.class);
+            items = result.getPhotos().getGalleryItemsList();
         }catch(IOException ioe){
             Log.e(TAG, "Failed to fetch items", ioe);
 

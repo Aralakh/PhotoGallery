@@ -12,11 +12,27 @@ import java.util.List;
 public class PhotoResult {
     private int page;
     private int pages;
-    private int perPage;
+    private int perpage;
     private int total;
 
     @SerializedName("photo")
     List<GalleryItem> mGalleryItemsList;
+
+    public void setPage(int page) {
+        this.page = page;
+    }
+
+    public void setPages(int pages) {
+        this.pages = pages;
+    }
+
+    public void setPerpage(int perpage) {
+        this.perpage = perpage;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
+    }
 
     public int getPage() {
         return page;
@@ -27,7 +43,7 @@ public class PhotoResult {
     }
 
     public int getItemsPerPage() {
-        return perPage;
+        return perpage;
     }
 
     public int getTotal() {

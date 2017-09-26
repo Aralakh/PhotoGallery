@@ -8,6 +8,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import org.w3c.dom.Text;
@@ -24,7 +25,14 @@ public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
 
     private RecyclerView mPhotoRecyclerView;
+    private GridLayoutManager mGridLayoutManager;
     private List<GalleryItem> mItems = new ArrayList<>();
+    private FlickrFetcher mFlickrFetcher = new FlickrFetcher();
+
+    private boolean isLoading = true;
+    public int maxPage;
+    public int currentPage;
+    public int itemsPerPage;
 
     public static PhotoGalleryFragment newInstance(){
         return new PhotoGalleryFragment();
@@ -42,12 +50,42 @@ public class PhotoGalleryFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
 
         mPhotoRecyclerView = (RecyclerView) v.findViewById(R.id.photo_recycler_view);
-        mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
+        mGridLayoutManager = new GridLayoutManager(getActivity(), 3);
+        mPhotoRecyclerView.setLayoutManager(mGridLayoutManager);
+
+
+
+        mPhotoRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener(){
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (!isLoading && (currentPage < maxPage) && (mGridLayoutManager.findLastVisibleItemPosition() >= (mItems.size() - 1))) {
+                    isLoading = true;
+                    currentPage++;
+                    new FetchItemTask().execute();
+                } else {
+                    int firstVisibleItem = mGridLayoutManager.findFirstVisibleItemPosition();
+                    int calcPage;
+
+                    if (firstVisibleItem < itemsPerPage) {
+                        calcPage = 1;
+                    } else {
+                        calcPage = (firstVisibleItem / itemsPerPage) + (firstVisibleItem % itemsPerPage == 0 ? 0 : 1);
+                    }
+                    if (calcPage != currentPage) {
+                        currentPage = calcPage;
+                    }
+                    setCurrentPageView(firstVisibleItem);
+                }
+            }
+        });
+
 
         setupAdapter();
 
         return v;
     }
+
 
     private class PhotoHolder extends RecyclerView.ViewHolder{
         private TextView mTitleTextView;
@@ -90,13 +128,33 @@ public class PhotoGalleryFragment extends Fragment {
     private class FetchItemTask extends AsyncTask<Void, Void, List<GalleryItem>>{
         @Override
         protected List<GalleryItem> doInBackground(Void... params){
-            return new FlickrFetcher().fetchItems(1);
+            return mFlickrFetcher.fetchItems(currentPage);
         }
 
         @Override
         protected void onPostExecute(List<GalleryItem> items){
-            mItems = items;
-            setupAdapter();
+            //first time querying data
+            if(mItems.size() == 0){
+                maxPage = mFlickrFetcher.getMaxPages();
+                itemsPerPage = mFlickrFetcher.getItemsPerPage();
+                mItems.addAll(items);
+                setupAdapter();
+                setCurrentPageView();
+            }else{
+                final int prevSize = mItems.size();
+                mItems.addAll(items);
+                mPhotoRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener(){
+                    @Override
+                    public void onGlobalLayout(){
+                        mPhotoRecyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        mPhotoRecyclerView.smoothScrollToPosition(prevSize);
+                        setCurrentPageView();
+                        isLoading = false;
+                    }
+                });
+
+                mPhotoRecyclerView.getAdapter().notifyDataSetChanged();
+            }
         }
     }
 
@@ -105,4 +163,15 @@ public class PhotoGalleryFragment extends Fragment {
             mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
         }
     }
+
+    private void setCurrentPageView(){
+        setCurrentPageView(-1);
+    }
+
+    private void setCurrentPageView(int firstVisibleItem){
+        if(firstVisibleItem == -1){
+            firstVisibleItem = mGridLayoutManager.findFirstVisibleItemPosition();
+        }
+    }
+
 }

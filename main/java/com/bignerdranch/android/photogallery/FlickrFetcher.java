@@ -104,12 +104,15 @@ public class FlickrFetcher {
                     .appendQueryParameter("page", Integer.toString(currentPage))
                     .appendQueryParameter("extras", "url_s")
                     .build().toString();
+
             String jsonString = getUrlString(url);
             Log.i(TAG, "Received JSON: " + jsonString);
-//            JSONObject jsonBody = new JSONObject(jsonString);
-//            parseItems(items, jsonBody);
+
             Gson gson = new Gson();
             PhotoResultQuery result = gson.fromJson(jsonString, PhotoResultQuery.class);
+            setMaxPages(result.getPhotos().getMaxPages());
+            setTotalItems(result.getPhotos().getTotal());
+            setItemsPerPage(result.getPhotos().getItemsPerPage());
             items = result.getPhotos().getGalleryItemsList();
         }catch(IOException ioe){
             Log.e(TAG, "Failed to fetch items", ioe);
@@ -120,26 +123,4 @@ public class FlickrFetcher {
 
         return items;
     }
-
-//    private void parseItems(List<GalleryItem> items, JSONObject jsonBody) throws IOException, JSONException{
-//
-//        JSONObject photosJsonObject = jsonBody.getJSONObject("photos");
-//        JSONArray photosJsonArray = photosJsonObject.getJSONArray("photo");
-//
-//        for(int i = 0; i < photosJsonArray.length(); i++){
-//            JSONObject photoJsonObject = photosJsonArray.getJSONObject(i);
-//
-//            GalleryItem item = new GalleryItem();
-//            item.setId(photoJsonObject.getString("id"));
-//            item.setCaption((photoJsonObject.getString("title")));
-//
-//            if(!photoJsonObject.has("url_s")){
-//                continue;
-//            }
-//
-//            item.setUrl(photoJsonObject.getString("url_s"));
-//            items.add(item);
-//        }
-//
-//    }
 }

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -126,15 +127,35 @@ public class PhotoGalleryFragment extends Fragment {
                 mMaxPage = mFlickrFetcher.getMaxPages();
                 mItemsPerPage = mFlickrFetcher.getItemsPerPage();
                 mItems.addAll(items);
-                setupAdapter();
+
+                mPhotoRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener(){
+                    @Override
+                    //dynamically scale number of columns based on device size
+                    public void onGlobalLayout(){
+                        mPhotoRecyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        int width = mPhotoRecyclerView.getMeasuredWidth();
+                        float columnWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 150, getActivity().getResources().getDisplayMetrics());
+                        int columnNumber = Math.round(width/columnWidth);
+                        mGridLayoutManager = new GridLayoutManager(getActivity(), columnNumber);
+                        mPhotoRecyclerView.setLayoutManager(mGridLayoutManager);
+                        setupAdapter();
+                    }
+                });
             }else{
                 final int prevSize = mItems.size();
                 mItems.addAll(items);
                 mPhotoRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener(){
                     @Override
+                    //dynamically scale number of columns based on device size
                     public void onGlobalLayout(){
                         mPhotoRecyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        int width = mPhotoRecyclerView.getMeasuredWidth();
+                        float columnWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 150, getActivity().getResources().getDisplayMetrics());
+                        int columnNumber = Math.round(width/columnWidth);
+                        mGridLayoutManager = new GridLayoutManager(getActivity(), columnNumber);
+                        mPhotoRecyclerView.setLayoutManager(mGridLayoutManager);
                         mPhotoRecyclerView.smoothScrollToPosition(prevSize);
+                        setupAdapter();
                     }
                 });
             }

@@ -11,9 +11,6 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,10 +26,11 @@ public class PhotoGalleryFragment extends Fragment {
     private List<GalleryItem> mItems = new ArrayList<>();
     private FlickrFetcher mFlickrFetcher = new FlickrFetcher();
 
-    private boolean isLoading = true;
-    public int maxPage;
+    private boolean mIsLoading = true;
+    public int pastVisibleItem;
+    public int mMaxPage = 1;
     public int currentPage;
-    public int itemsPerPage;
+    public int mItemsPerPage;
 
     public static PhotoGalleryFragment newInstance(){
         return new PhotoGalleryFragment();
@@ -59,25 +57,15 @@ public class PhotoGalleryFragment extends Fragment {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                if (!isLoading && (currentPage < maxPage) && (mGridLayoutManager.findLastVisibleItemPosition() >= (mItems.size() - 1))) {
-                    isLoading = true;
+                pastVisibleItem = mGridLayoutManager.findLastVisibleItemPosition();
+
+                if(!mIsLoading && (pastVisibleItem >= mItems.size()-1) && (currentPage < mMaxPage)){
+                    mIsLoading = true;
                     currentPage++;
                     new FetchItemTask().execute();
-                } else {
-                    int firstVisibleItem = mGridLayoutManager.findFirstVisibleItemPosition();
-                    int calcPage;
-
-                    if (firstVisibleItem < itemsPerPage) {
-                        calcPage = 1;
-                    } else {
-                        calcPage = (firstVisibleItem / itemsPerPage) + (firstVisibleItem % itemsPerPage == 0 ? 0 : 1);
-                    }
-                    if (calcPage != currentPage) {
-                        currentPage = calcPage;
-                    }
-                    setCurrentPageView(firstVisibleItem);
                 }
             }
+
         });
 
 
@@ -135,11 +123,10 @@ public class PhotoGalleryFragment extends Fragment {
         protected void onPostExecute(List<GalleryItem> items){
             //first time querying data
             if(mItems.size() == 0){
-                maxPage = mFlickrFetcher.getMaxPages();
-                itemsPerPage = mFlickrFetcher.getItemsPerPage();
+                mMaxPage = mFlickrFetcher.getMaxPages();
+                mItemsPerPage = mFlickrFetcher.getItemsPerPage();
                 mItems.addAll(items);
                 setupAdapter();
-                setCurrentPageView();
             }else{
                 final int prevSize = mItems.size();
                 mItems.addAll(items);
@@ -148,13 +135,11 @@ public class PhotoGalleryFragment extends Fragment {
                     public void onGlobalLayout(){
                         mPhotoRecyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                         mPhotoRecyclerView.smoothScrollToPosition(prevSize);
-                        setCurrentPageView();
-                        isLoading = false;
                     }
                 });
-
-                mPhotoRecyclerView.getAdapter().notifyDataSetChanged();
             }
+            mIsLoading = false;
+            mPhotoRecyclerView.getAdapter().notifyDataSetChanged();
         }
     }
 
@@ -163,15 +148,4 @@ public class PhotoGalleryFragment extends Fragment {
             mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
         }
     }
-
-    private void setCurrentPageView(){
-        setCurrentPageView(-1);
-    }
-
-    private void setCurrentPageView(int firstVisibleItem){
-        if(firstVisibleItem == -1){
-            firstVisibleItem = mGridLayoutManager.findFirstVisibleItemPosition();
-        }
-    }
-
 }

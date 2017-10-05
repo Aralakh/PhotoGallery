@@ -9,11 +9,11 @@ public class GalleryItem {
     private String id;
     private String url_s;
 
-    public String getCaption() {
+    public String getTitle() {
         return title;
     }
 
-    public void setCaption(String caption) {
+    public void setTitle(String caption) {
         title = caption;
     }
 

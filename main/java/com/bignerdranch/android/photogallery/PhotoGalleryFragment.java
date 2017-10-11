@@ -1,5 +1,6 @@
 package com.bignerdranch.android.photogallery;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -35,6 +36,7 @@ public class PhotoGalleryFragment extends Fragment {
     private ThumbnailDownloader<PhotoHolder> mThumbnailDownloader;
 
     private boolean mIsLoading = true;
+    public int mFirstVisibleItem;
     public int mPastVisibleItem;
     public int mMaxPage = 1;
     public int currentPage;
@@ -52,7 +54,7 @@ public class PhotoGalleryFragment extends Fragment {
 
         Handler responseHandler = new Handler();
         mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
-        mThumbnailDownloader.setTThumbnailDownloaderListener(new ThumbnailDownloader.ThumbnailDownloadListener<PhotoHolder>() {
+        mThumbnailDownloader.setThumbnailDownloaderListener(new ThumbnailDownloader.ThumbnailDownloadListener<PhotoHolder>() {
             @Override
             public void onThumbnailDownloaded(PhotoHolder photoHolder, Bitmap bitmap) {
                 Drawable drawable = new BitmapDrawable(getResources(), bitmap);
@@ -84,10 +86,12 @@ public class PhotoGalleryFragment extends Fragment {
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
                 mPastVisibleItem = mGridLayoutManager.findLastVisibleItemPosition();
+                mFirstVisibleItem = mGridLayoutManager.findFirstVisibleItemPosition();
                 if (!mIsLoading && (mPastVisibleItem >= mItems.size() - 1) && (currentPage < mMaxPage)) {
                     mIsLoading = true;
                     currentPage++;
                     new FetchItemTask().execute();
+                    preloadImages(mFirstVisibleItem);
                 }
             }
 
@@ -106,6 +110,23 @@ public class PhotoGalleryFragment extends Fragment {
     private void setupAdapter() {
         if (isAdded()) {
             mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
+        }
+    }
+
+    //preload the first 10 previous and next images based on the first visible item
+    private void preloadImages(int position) {
+        final int imageBufferSize = 10;
+        int startPosition = position + 1;
+        PhotoAdapter adapter = (PhotoAdapter) mPhotoRecyclerView.getAdapter();
+        int upperLimit = Math.min(startPosition + imageBufferSize, adapter.getItemCount());
+        for (int i = startPosition; i < upperLimit; i++) {
+            mThumbnailDownloader.preloadImage(adapter.mGalleryItems.get(i).getUrl());
+        }
+
+        startPosition = mGridLayoutManager.findFirstVisibleItemPosition() - 1;
+        int lowerLimit = Math.max(startPosition - imageBufferSize, 0);
+        for (int i = startPosition; i > lowerLimit; i--) {
+            mThumbnailDownloader.preloadImage(adapter.mGalleryItems.get(i).getUrl());
         }
     }
 
@@ -139,9 +160,19 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         public void onBindViewHolder(PhotoHolder photoHolder, int position) {
             GalleryItem galleryItem = mGalleryItems.get(position);
-            Drawable placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.blaze);
-            photoHolder.bindDrawable(placeholder);
-            mThumbnailDownloader.queueThumbnail(photoHolder, galleryItem.getUrl());
+//            Drawable placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.blaze);
+//            photoHolder.bindDrawable(placeholder);
+//            mThumbnailDownloader.queueThumbnail(photoHolder, galleryItem.getUrl());
+            Bitmap bitmap = mThumbnailDownloader.getBitmapFromMemCache(galleryItem.getUrl());
+            if(bitmap == null){
+                Drawable placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.blaze);
+                photoHolder.bindDrawable((placeholder));
+                mThumbnailDownloader.queueThumbnail(photoHolder, galleryItem.getUrl());
+            }else{
+                Log.i(TAG, "Loaded cached image");
+                Drawable cachedImage = new BitmapDrawable(getResources(), bitmap);
+                photoHolder.bindDrawable(cachedImage);
+            }
         }
 
         @Override

@@ -105,29 +105,6 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     }
 
     private void handleRequest(final T target){
-//        try {
-//            final String url = mRequestMap.get(target);
-//            if (url == null) {
-//                return;
-//            }
-//
-//            byte[] bitmapBytes = new FlickrFetcher().getUrlBytes(url);
-//            final Bitmap bitmap = BitmapFactory.decodeByteArray(bitmapBytes, 0, bitmapBytes.length);
-//            Log.i(TAG, "Bitmap created");
-//
-//            mResponseHandler.post(new Runnable(){
-//               public void run(){
-//                   if(mRequestMap.get(target) != url || mHasQuit){
-//                       return;
-//                   }
-//
-//                   mRequestMap.remove(target);
-//                   mThumbnailDownloaderListener.onThumbnailDownloaded(target, bitmap);
-//               }
-//            });
-//        }catch (IOException ioe){
-//                Log.e(TAG, "Error downloading image", ioe);
-//        }
 
         final String url = mRequestMap.get(target);
         final Bitmap bitmap;

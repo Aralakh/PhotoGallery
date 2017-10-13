@@ -91,7 +91,6 @@ public class PhotoGalleryFragment extends Fragment {
                     mIsLoading = true;
                     currentPage++;
                     new FetchItemTask().execute();
-                    preloadImages(mFirstVisibleItem);
                 }
             }
 
@@ -173,6 +172,8 @@ public class PhotoGalleryFragment extends Fragment {
                 Drawable cachedImage = new BitmapDrawable(getResources(), bitmap);
                 photoHolder.bindDrawable(cachedImage);
             }
+            mFirstVisibleItem = mGridLayoutManager.findFirstVisibleItemPosition();
+            preloadImages(mFirstVisibleItem);
         }
 
         @Override

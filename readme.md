@@ -8,3 +8,4 @@ This application covers chapters 25-30 of Android Programming: The Big Nerd Ranc
 
 ![alt text](https://github.com/Aralakh/PhotoGallery/blob/master/main/photogallery.png "PhotoGallery")
 ![alt text](https://github.com/Aralakh/PhotoGallery/blob/master/main/flickrfetchr.png "PhotoGallery")
+![alt text](https://github.com/Aralakh/PhotoGallery/blob/master/main/searchMenu.png "PhotoGallery Search Menu")

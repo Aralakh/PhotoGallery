@@ -88,6 +88,10 @@ public class PhotoGalleryFragment extends Fragment {
             @Override
             public boolean onQueryTextSubmit(String s) {
                 Log.d(TAG, "QueryTextSubmit: " + s);
+                QueryPreferences.setStoredQuery(getActivity(), s);
+                searchView.onActionViewCollapsed();
+                mItems.clear();
+                mPhotoRecyclerView.getAdapter().notifyDataSetChanged();
                 updateItems();
                 return true;
             }
@@ -98,10 +102,35 @@ public class PhotoGalleryFragment extends Fragment {
                 return false;
             }
         });
+
+        searchView.setOnSearchClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                String query = QueryPreferences.getStoredQuery(getActivity());
+                searchView.setQuery(query, false);
+            }
+        });
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch(item.getItemId()){
+            case R.id.menu_item_clear:
+                QueryPreferences.setStoredQuery(getActivity(), null);
+                mItems.clear();
+                currentPage = 0;
+                mMaxPage = 1;
+                updateItems();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     private void updateItems(){
-        new FetchItemTask().execute();
+        String query = QueryPreferences.getStoredQuery(getActivity());
+        new FetchItemTask(query).execute();
     }
 
     @Override
@@ -191,9 +220,6 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         public void onBindViewHolder(PhotoHolder photoHolder, int position) {
             GalleryItem galleryItem = mGalleryItems.get(position);
-//            Drawable placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.blaze);
-//            photoHolder.bindDrawable(placeholder);
-//            mThumbnailDownloader.queueThumbnail(photoHolder, galleryItem.getUrl());
             Bitmap bitmap = mThumbnailDownloader.getBitmapFromMemCache(galleryItem.getUrl());
             if(bitmap == null){
                 Drawable placeholder = ContextCompat.getDrawable(getActivity(), R.drawable.blaze);
@@ -215,13 +241,18 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     private class FetchItemTask extends AsyncTask<Void, Void, List<GalleryItem>> {
+        private String mQuery;
+
+        public FetchItemTask(String query){
+            mQuery = query;
+        }
+
         @Override
         protected List<GalleryItem> doInBackground(Void... params) {
-            String query = null;
-            if(query == null){
+            if(mQuery == null){
                 return new FlickrFetcher().fetchRecentPhotos(currentPage);
             } else{
-                return new FlickrFetcher().searchPhotos(query);
+                return new FlickrFetcher().searchPhotos(mQuery);
             }
         }
 

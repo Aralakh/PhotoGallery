@@ -42,7 +42,7 @@ public class PhotoGalleryFragment extends Fragment {
     public int mFirstVisibleItem;
     public int mPastVisibleItem;
     public int mMaxPage = 1;
-    public int currentPage;
+    public int mCurrentPage;
     public int mItemsPerPage;
 
     public static PhotoGalleryFragment newInstance() {
@@ -119,7 +119,7 @@ public class PhotoGalleryFragment extends Fragment {
             case R.id.menu_item_clear:
                 QueryPreferences.setStoredQuery(getActivity(), null);
                 mItems.clear();
-                currentPage = 0;
+                mCurrentPage = 0;
                 mMaxPage = 1;
                 updateItems();
                 return true;
@@ -148,9 +148,9 @@ public class PhotoGalleryFragment extends Fragment {
                 super.onScrolled(recyclerView, dx, dy);
                 mPastVisibleItem = mGridLayoutManager.findLastVisibleItemPosition();
                 mFirstVisibleItem = mGridLayoutManager.findFirstVisibleItemPosition();
-                if (!mIsLoading && (mPastVisibleItem >= mItems.size() - 1) && (currentPage < mMaxPage)) {
+                if (!mIsLoading && (mPastVisibleItem >= mItems.size() - 1) && (mCurrentPage < mMaxPage)) {
                     mIsLoading = true;
-                    currentPage++;
+                    mCurrentPage++;
                     updateItems();
                 }
             }
@@ -251,7 +251,9 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         protected List<GalleryItem> doInBackground(Void... params) {
             if(mQuery == null){
-                return new FlickrFetcher().fetchRecentPhotos(currentPage);
+                mFlickrFetcher = new FlickrFetcher();
+                List<GalleryItem> items = mFlickrFetcher.fetchRecentPhotos(mCurrentPage);
+                return items;
             } else{
                 return new FlickrFetcher().searchPhotos(mQuery);
             }
@@ -261,9 +263,10 @@ public class PhotoGalleryFragment extends Fragment {
         protected void onPostExecute(List<GalleryItem> items) {
             //first time querying data
             if (mItems.size() == 0) {
+                mItems.addAll(items);
                 mMaxPage = mFlickrFetcher.getMaxPages();
                 mItemsPerPage = mFlickrFetcher.getItemsPerPage();
-                mItems.addAll(items);
+
 
                 mPhotoRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override

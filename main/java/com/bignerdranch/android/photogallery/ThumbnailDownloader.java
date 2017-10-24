@@ -1,5 +1,6 @@
 package com.bignerdranch.android.photogallery;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
@@ -79,7 +80,12 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     }
 
     public Bitmap getBitmapFromMemCache(String key){
-        return mMemoryCache.get(key);
+        if(key != null){
+            return mMemoryCache.get(key);
+        }
+        Bitmap placeholder = BitmapFactory.decodeResource(Resources.getSystem(), R.drawable.blaze);
+        return placeholder;
+
     }
 
     public void queueThumbnail(T target, String url){

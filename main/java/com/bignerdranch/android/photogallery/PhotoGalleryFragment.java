@@ -173,12 +173,13 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
-    //preload the first 10 previous and next images based on the first visible item
+    //preload the 10 previous and 10 next images based on the first visible item
     private void preloadImages(int position) {
         final int imageBufferSize = 10;
         int startPosition = position + 1;
         PhotoAdapter adapter = (PhotoAdapter) mPhotoRecyclerView.getAdapter();
         int upperLimit = Math.min(startPosition + imageBufferSize, adapter.getItemCount());
+
         for (int i = startPosition; i < upperLimit; i++) {
             mThumbnailDownloader.preloadImage(adapter.mGalleryItems.get(i).getUrl());
         }

@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.List;
 public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
 
+    private ProgressBar mProgressBar;
     private RecyclerView mPhotoRecyclerView;
     private GridLayoutManager mGridLayoutManager;
     private List<GalleryItem> mItems = new ArrayList<>();
@@ -54,7 +56,7 @@ public class PhotoGalleryFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         setHasOptionsMenu(true);
-        updateItems();
+       // updateItems();
 
         Handler responseHandler = new Handler();
         mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
@@ -129,6 +131,7 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     private void updateItems(){
+        showProgressBar();
         String query = QueryPreferences.getStoredQuery(getActivity());
         new FetchItemTask(query).execute();
     }
@@ -138,9 +141,10 @@ public class PhotoGalleryFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
 
         mPhotoRecyclerView = (RecyclerView) v.findViewById(R.id.photo_recycler_view);
+        mProgressBar = (ProgressBar) v.findViewById(R.id.loading_bar);
         mGridLayoutManager = new GridLayoutManager(getActivity(), 3);
         mPhotoRecyclerView.setLayoutManager(mGridLayoutManager);
-
+        updateItems();
 
         mPhotoRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -165,6 +169,16 @@ public class PhotoGalleryFragment extends Fragment {
         super.onDestroy();
         mThumbnailDownloader.quit();
         Log.i(TAG, "Background thread destroyed.");
+    }
+
+    public void showProgressBar(){
+        mProgressBar.setVisibility(View.VISIBLE);
+        mPhotoRecyclerView.setVisibility(View.GONE);
+    }
+
+    public void hideProgressBar(){
+        mProgressBar.setVisibility(View.GONE);
+        mPhotoRecyclerView.setVisibility(View.VISIBLE);
     }
 
     private void setupAdapter() {
@@ -251,9 +265,7 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         protected List<GalleryItem> doInBackground(Void... params) {
             if(mQuery == null){
-                mFlickrFetcher = new FlickrFetcher();
-                List<GalleryItem> items = mFlickrFetcher.fetchRecentPhotos(mCurrentPage);
-                return items;
+                return mFlickrFetcher.fetchRecentPhotos(mCurrentPage);
             } else{
                 return new FlickrFetcher().searchPhotos(mQuery);
             }
@@ -290,6 +302,7 @@ public class PhotoGalleryFragment extends Fragment {
                 mPhotoRecyclerView.smoothScrollToPosition(prevSize);
 
             }
+            hideProgressBar();
             mIsLoading = false;
         }
     }

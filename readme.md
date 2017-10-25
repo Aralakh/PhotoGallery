@@ -1,8 +1,8 @@
 # PhotoGallery
 
-PhotoGallery is a Flickr app. Eventually, it will show images from Flickr in a gallery style. 
+PhotoGallery is a Flickr app. It shows images from Flickr in a gallery style. 
 
-So far this application demonstrates JSON querying, using the GSON library, HTTP connection and background tasks, loopers and handlers. It fetches the image data of the 1000 most recent Flickr images.
+So far this application demonstrates JSON querying, using the GSON library, HTTP connection and background tasks, loopers and handlers. It fetches the image data of the 1000 most recent Flickr images. It allows the user to search Flickr for images, and implements a caching system with LruCache to decrease loading times. 
 
 This application covers chapters 25-30 of Android Programming: The Big Nerd Ranch Guide 3rd Edition.
 

@@ -1,9 +1,16 @@
 package com.bignerdranch.android.photogallery;
 
+import android.Manifest;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -22,6 +29,8 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+
+import java.security.acl.Permission;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +40,7 @@ import java.util.List;
 
 public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
-
+    private static final int JOB_ID = 1;
     private ProgressBar mProgressBar;
     private RecyclerView mPhotoRecyclerView;
     private GridLayoutManager mGridLayoutManager;
@@ -113,9 +122,9 @@ public class PhotoGalleryFragment extends Fragment {
         });
 
         MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
-        if(PollService.isServiceAlarmOn(getActivity())){
+        if(PollService.isServiceAlarmOn(getActivity()) || hasBeenScheduled(JOB_ID)){
             toggleItem.setTitle(R.string.stop_polling);
-        }else{
+        }else if(!PollService.isServiceAlarmOn(getActivity()) && !hasBeenScheduled(JOB_ID)){
             toggleItem.setTitle(R.string.start_polling);
         }
     }
@@ -131,13 +140,53 @@ public class PhotoGalleryFragment extends Fragment {
                 updateItems();
                 return true;
             case R.id.menu_item_toggle_polling:
-                boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
-                PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+               //use JobScheduler if device supports it
+                if(isLollipopOrHigher() && hasReceiveBootCompletedPerm()){
+                    JobScheduler scheduler = (JobScheduler) getActivity().getSystemService(Context.JOB_SCHEDULER_SERVICE);
+                   // final int JOB_ID = 1;
+
+                    if(hasBeenScheduled(JOB_ID)){
+                        Log.i(TAG, "scheduler.cancel("+JOB_ID+")");
+                        scheduler.cancel(JOB_ID);
+                    }else{
+                        JobInfo jobInfo = new JobInfo.Builder(
+                                JOB_ID, new ComponentName(getActivity(), PollServiceScheduler.class))
+                                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
+                                .setPeriodic(1000*60*1)
+                                .setPersisted(true)
+                                .build();
+                        scheduler.schedule(jobInfo);
+                        Log.i(TAG, "scheduler.schedule("+jobInfo+")");
+                    }
+                    //Use AlarmManager if device below Lollipop or is missing permission
+                }else {
+                    boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
+                    PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+                }
+
                 getActivity().invalidateOptionsMenu();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private boolean hasBeenScheduled(int jobId){
+        JobScheduler scheduler = (JobScheduler) getActivity().getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        boolean isScheduled = false;
+        for(JobInfo jobInfo : scheduler.getAllPendingJobs()){
+            if(jobInfo.getId() == jobId){
+                isScheduled = true;
+            }
+        }
+        return isScheduled;
+    }
+
+    private boolean hasReceiveBootCompletedPerm(){
+        if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.RECEIVE_BOOT_COMPLETED) == PackageManager.PERMISSION_GRANTED){
+            return true;
+        }
+        return false;
     }
 
     private void updateItems(){
@@ -194,6 +243,15 @@ public class PhotoGalleryFragment extends Fragment {
     private void setupAdapter() {
         if (isAdded()) {
             mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
+        }
+    }
+
+    public boolean isLollipopOrHigher(){
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+            return true;
+        }
+        else{
+            return false;
         }
     }
 

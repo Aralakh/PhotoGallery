@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * Created by lawren on 25/10/17.
  */
 
-public class PollService extends IntentService{
+public class PollService extends IntentService {
     private static final String TAG = "PollService";
     private static final Long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(30);
 

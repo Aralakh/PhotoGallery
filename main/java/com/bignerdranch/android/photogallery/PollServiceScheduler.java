@@ -1,21 +1,14 @@
 package com.bignerdranch.android.photogallery;
 
 import android.annotation.TargetApi;
-import android.app.Notification;
-import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.res.Resources;
-import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import java.util.List;
@@ -60,11 +53,11 @@ public class PollServiceScheduler extends JobService {
 
     public static void scheduleJob(Context context, boolean startSchedule){
         JobScheduler scheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        //schedule job to run once every 15 minutes
+        //schedule job to run once every 30 minutes
         if(startSchedule){
             JobInfo jobInfo = new JobInfo.Builder(JOB_ID, new ComponentName(context, PollServiceScheduler.class))
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
-                    .setPeriodic(1000*60*15)
+                    .setPeriodic(1000*60*30)
                     .setPersisted(true)
                     .build();
                     scheduler.schedule(jobInfo);
@@ -82,7 +75,7 @@ public class PollServiceScheduler extends JobService {
             JobParameters jobParams = parameters[0];
             Log.i(TAG, "Polling Flickr for new images");
             try{
-                pollImages();
+                PollingUtil.pollImages(PollServiceScheduler.this);
                 jobFinished(jobParams, false);
             }catch(Exception e){
                 jobFinished(jobParams, true);
@@ -90,64 +83,5 @@ public class PollServiceScheduler extends JobService {
 
             return null;
         }
-    }
-
-    private boolean isNetworkAvailableAndConnected(){
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-
-        boolean isNetworkAvailable = cm.getActiveNetworkInfo() != null;
-        boolean isNetworkConnected = isNetworkAvailable && cm.getActiveNetworkInfo().isConnected();
-
-        return isNetworkConnected;
-    }
-
-    private void pollImages(){
-        if(!isNetworkAvailableAndConnected()){
-            return;
-        }
-
-        List <GalleryItem> items;
-        String query = QueryPreferences.getStoredQuery(PollServiceScheduler.this);
-
-        if(query == null){
-            FlickrFetcher flickrFetcher = new FlickrFetcher();
-            int currentPage = flickrFetcher.getCurrentPage();
-            items = flickrFetcher.fetchRecentPhotos(currentPage);
-        }else{
-            items = new FlickrFetcher().searchPhotos(query);
-        }
-
-        if(items.size() == 0){
-            return;
-        }
-
-        String lastResultId = QueryPreferences.getLastResultId(PollServiceScheduler.this);
-        String resultId = items.get(0).getId();
-
-        if(resultId.equals(lastResultId)){
-            Log.i(TAG, "Got an old result: " + resultId);
-        }else{
-            Log.i(TAG, "Got a new result: " + resultId);
-
-            Resources resources = getResources();
-            Intent photoIntent = PhotoGalleryActivity.newIntent(PollServiceScheduler.this);
-            PendingIntent pendingIntent = PendingIntent.getActivity(PollServiceScheduler.this, 0, photoIntent, 0);
-
-            Notification notification = new NotificationCompat.Builder(PollServiceScheduler.this)
-                    .setTicker(resources.getString(R.string.new_pictures_title))
-                    .setSmallIcon(android.R.drawable.ic_menu_report_image)
-                    .setContentTitle(resources.getString(R.string.new_pictures_title))
-                    .setContentText(resources.getString(R.string.new_pictures_text))
-                    .setContentIntent(pendingIntent)
-                    .setAutoCancel(true)
-                    .build();
-
-            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(PollServiceScheduler.this);
-            notificationManager.notify(0, notification);
-
-        }
-
-        QueryPreferences.setLastResultId(PollServiceScheduler.this, resultId);
-
     }
 }

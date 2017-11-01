@@ -40,7 +40,7 @@ import java.util.List;
 
 public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
-    private static final int JOB_ID = 1;
+
     private ProgressBar mProgressBar;
     private RecyclerView mPhotoRecyclerView;
     private GridLayoutManager mGridLayoutManager;
@@ -122,9 +122,9 @@ public class PhotoGalleryFragment extends Fragment {
         });
 
         MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
-        if(PollService.isServiceAlarmOn(getActivity()) || hasBeenScheduled(JOB_ID)){
+        if(isAlarmOn()){
             toggleItem.setTitle(R.string.stop_polling);
-        }else if(!PollService.isServiceAlarmOn(getActivity()) && !hasBeenScheduled(JOB_ID)){
+        }else{
             toggleItem.setTitle(R.string.start_polling);
         }
     }
@@ -142,22 +142,8 @@ public class PhotoGalleryFragment extends Fragment {
             case R.id.menu_item_toggle_polling:
                //use JobScheduler if device supports it
                 if(isLollipopOrHigher() && hasReceiveBootCompletedPerm()){
-                    JobScheduler scheduler = (JobScheduler) getActivity().getSystemService(Context.JOB_SCHEDULER_SERVICE);
-                   // final int JOB_ID = 1;
-
-                    if(hasBeenScheduled(JOB_ID)){
-                        Log.i(TAG, "scheduler.cancel("+JOB_ID+")");
-                        scheduler.cancel(JOB_ID);
-                    }else{
-                        JobInfo jobInfo = new JobInfo.Builder(
-                                JOB_ID, new ComponentName(getActivity(), PollServiceScheduler.class))
-                                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
-                                .setPeriodic(1000*60*1)
-                                .setPersisted(true)
-                                .build();
-                        scheduler.schedule(jobInfo);
-                        Log.i(TAG, "scheduler.schedule("+jobInfo+")");
-                    }
+                   boolean shouldScheduleJob = !PollServiceScheduler.hasBeenScheduled(getActivity());
+                   PollServiceScheduler.scheduleJob(getActivity(), shouldScheduleJob);
                     //Use AlarmManager if device below Lollipop or is missing permission
                 }else {
                     boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
@@ -171,17 +157,13 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
-    private boolean hasBeenScheduled(int jobId){
-        JobScheduler scheduler = (JobScheduler) getActivity().getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        boolean isScheduled = false;
-        for(JobInfo jobInfo : scheduler.getAllPendingJobs()){
-            if(jobInfo.getId() == jobId){
-                isScheduled = true;
-            }
+    private boolean isAlarmOn(){
+        if(isLollipopOrHigher() && hasReceiveBootCompletedPerm()){
+            return PollServiceScheduler.hasBeenScheduled(getActivity());
+        }else{
+            return PollService.isServiceAlarmOn(getActivity());
         }
-        return isScheduled;
     }
-
     private boolean hasReceiveBootCompletedPerm(){
         if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.RECEIVE_BOOT_COMPLETED) == PackageManager.PERMISSION_GRANTED){
             return true;

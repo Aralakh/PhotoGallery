@@ -1,5 +1,6 @@
 package com.bignerdranch.android.photogallery;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -16,7 +17,12 @@ import java.util.List;
  * Created by lawren on 01/11/17.
  */
 
+//connect to network if possible and poll for new Flickr images
 public class PollingUtil {
+    public static final String ACTION_SHOW_NOTIFICATION = "com.bignerdranch.android.photogallery.SHOW_NOTIFICATION";
+    public static final String PERM_PRIVATE = "com.bignerdranch.android.photogallery.PRIVATE";
+    public static final String REQUEST_CODE = "REQUEST_CODE";
+    public static final String NOTIFICATION = "NOTIFICATION";
 
     private static boolean isNetworkAvailableAndConnected(Context context){
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -69,12 +75,18 @@ public class PollingUtil {
                     .setAutoCancel(true)
                     .build();
 
-            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-            notificationManager.notify(0, notification);
+           showBackgroundNotification(context, 0, notification);
 
         }
 
         QueryPreferences.setLastResultId(context, resultId);
 
+    }
+
+    private static void showBackgroundNotification(Context context, int requestCode, Notification notification){
+        Intent intent = new Intent(ACTION_SHOW_NOTIFICATION);
+        intent.putExtra(REQUEST_CODE, requestCode);
+        intent.putExtra(NOTIFICATION, notification);
+        context.sendOrderedBroadcast(intent, PERM_PRIVATE, null, null, Activity.RESULT_OK, null, null);
     }
 }

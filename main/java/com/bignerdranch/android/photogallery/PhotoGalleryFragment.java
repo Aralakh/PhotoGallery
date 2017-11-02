@@ -38,7 +38,7 @@ import java.util.List;
  * Created by lawren on 22/09/17.
  */
 
-public class PhotoGalleryFragment extends Fragment {
+public class PhotoGalleryFragment extends VisibleFragment {
     private static final String TAG = "PhotoGalleryFragment";
 
     private ProgressBar mProgressBar;
@@ -141,7 +141,7 @@ public class PhotoGalleryFragment extends Fragment {
                 return true;
             case R.id.menu_item_toggle_polling:
                //use JobScheduler if device supports it
-                if(isLollipopOrHigher() && hasReceiveBootCompletedPerm()){
+                if(isLollipopOrHigher() && hasReceiveBootCompletedPerm(getActivity())){
                    boolean shouldScheduleJob = !PollServiceScheduler.hasBeenScheduled(getActivity());
                    PollServiceScheduler.scheduleJob(getActivity(), shouldScheduleJob);
                     //Use AlarmManager if device below Lollipop or is missing permission
@@ -157,15 +157,15 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
-    private boolean isAlarmOn(){
-        if(isLollipopOrHigher() && hasReceiveBootCompletedPerm()){
+    public boolean isAlarmOn(){
+        if(isLollipopOrHigher() && hasReceiveBootCompletedPerm(getActivity())){
             return PollServiceScheduler.hasBeenScheduled(getActivity());
         }else{
             return PollService.isServiceAlarmOn(getActivity());
         }
     }
-    private boolean hasReceiveBootCompletedPerm(){
-        if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.RECEIVE_BOOT_COMPLETED) == PackageManager.PERMISSION_GRANTED){
+   public static boolean hasReceiveBootCompletedPerm(Context context){
+        if(ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_BOOT_COMPLETED) == PackageManager.PERMISSION_GRANTED){
             return true;
         }
         return false;
@@ -228,7 +228,7 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
-    public boolean isLollipopOrHigher(){
+    public static boolean isLollipopOrHigher(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
             return true;
         }

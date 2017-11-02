@@ -11,7 +11,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by lawren on 31/10/17.
@@ -20,6 +20,8 @@ import java.util.List;
 
 public class PollServiceScheduler extends JobService {
     private static final String TAG = "PollServiceScheduler";
+    private static final Long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(30);
+
     private PollTask mCurrentTask = new PollTask();
     private static final int JOB_ID = 1;
 
@@ -48,6 +50,7 @@ public class PollServiceScheduler extends JobService {
                 break;
             }
         }
+        QueryPreferences.setAlarmOn(context, isScheduled);
         return isScheduled;
     }
 
@@ -57,7 +60,7 @@ public class PollServiceScheduler extends JobService {
         if(startSchedule){
             JobInfo jobInfo = new JobInfo.Builder(JOB_ID, new ComponentName(context, PollServiceScheduler.class))
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
-                    .setPeriodic(1000*60*30)
+                    .setPeriodic(POLL_INTERVAL_MS)
                     .setPersisted(true)
                     .build();
                     scheduler.schedule(jobInfo);

@@ -75,7 +75,7 @@ public class PhotoPageFragment extends VisibleFragment {
         mWebView.setWebViewClient(new WebViewClient(){
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-//               if(Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+               if(Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                    if (url.startsWith("http://") || url.startsWith("https://")) {
                        return false;
                    } else if(url.startsWith("intent://")){
@@ -90,23 +90,28 @@ public class PhotoPageFragment extends VisibleFragment {
                    }
                    return true;
                }
-//               return false;
-//            }
-//            @Override
-//            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request){
-//                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
-//                    String requestUrl = request.getUrl().toString();
-//                    if (requestUrl.startsWith("http://") || requestUrl.startsWith("https://")){
-//                        return false;
-//                    }else{
-//                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(requestUrl));
-//                        intent = Intent.createChooser(intent, "Open with");
-//                        startActivity(intent);
-//                        return true;
-//                    }
-//                }
-//                return false;
-//            }
+               return false;
+            }
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request){
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+                    String requestUrl = request.getUrl().toString();
+                    if (requestUrl.startsWith("http://") || requestUrl.startsWith("https://")){
+                        return false;
+                    }else if(requestUrl.startsWith("intent://")){
+                        try {
+                            Intent intent = new Intent().parseUri(requestUrl, Intent.URI_INTENT_SCHEME);
+                            startActivity(intent);
+                        }catch(URISyntaxException e){
+                            Log.e(TAG, "Can't resolve intent: " + e);
+                            return true;
+                        }
+                        return true;
+                    }
+                    return true;
+                }
+                return false;
+            }
         });
         mWebView.loadUrl(mUri.toString());
 
